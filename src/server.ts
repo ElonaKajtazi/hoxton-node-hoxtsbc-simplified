@@ -40,9 +40,14 @@ app.get("/users", async (req, res) => {
   }
 });
 app.get("/transactions", async (req, res) => {
-  //@ts-ignore
-  const user = await getCurrentUser(req.headers.authorization);
-  res.send(user?.recieved && user.sent);
+  try {
+    //@ts-ignore
+    const user = await getCurrentUser(req.headers.authorization);
+    res.send(user?.recieved && user.sent);
+  } catch (error) {
+    //@ts-ignore
+    res.status(400).send({ error: error.message });
+  }
 });
 
 app.post("/sign-up", async (req, res) => {
@@ -69,15 +74,20 @@ app.post("/sign-up", async (req, res) => {
   }
 });
 app.post("/sign-in", async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: { email: req.body.email },
-    include: { recieved: true, sent: true },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: req.body.email },
+      include: { recieved: true, sent: true },
+    });
 
-  if (user && bcrypt.compareSync(req.body.password, user.password)) {
-    res.send({ user: user, token: getToken(user.id) });
-  } else {
-    res.status(400).send({ error: "Incorrect email or pasword" });
+    if (user && bcrypt.compareSync(req.body.password, user.password)) {
+      res.send({ user: user, token: getToken(user.id) });
+    } else {
+      res.status(400).send({ error: "Incorrect email or pasword" });
+    }
+  } catch (error) {
+    //@ts-ignore
+    res.status(400).send({ error: error.message });
   }
 });
 app.get("/validate", async (req, res) => {
